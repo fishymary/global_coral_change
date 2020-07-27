@@ -2,22 +2,20 @@
 
 This repository includes data and analysis scripts to accompany:
 
-# Managing locally for macroalgae can reduce coral mortality after bleaching
+# Local conditions magnify coral loss following marine heatwaves
 
 ### Author of analysis and code: Mary K Donovan
-### (in prep for submission)
+### (in submission)
 
 -----
 
 ### Description:
-This work ...
+This work analyzes the global [Reef Check dataset]<reefcheck.org> to ask how local biotic and abiotic factors influence chance in coral cover following coral bleaching.
 
 ### Contents:
 #### Scripts:
-* **1_.R:** R script that ...
+* **1_run_model.R:** R script that sets up data, defines JAGS model, and executes the model.
+* **2_summaries_and_visualizations.R:** R script that reads in output of 1_run_model.R and creates figures and tables
 
 #### Data:
-* **data/data.csv/:** data on ...
-
-Data can also be accessed and cited on Dryad: 
-(insert link)
+Data will be available on Dryad upon publication. 
