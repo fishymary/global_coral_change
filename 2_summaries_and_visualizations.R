@@ -312,6 +312,72 @@ mtext(expression(paste('Change in coral cover (',Delta,')')), outer=T,side=2,cex
 dev.off()
 
 
+pdf(file='outputs/Figure3_rev.pdf',height=10,width=4)
+par(mfrow=c(3,1),mar=c(4.1,5.1,1,1),oma=c(0,0,0,0),mgp=c(2.8,1,0))
+
+# Macro
+plot(dat$B_2~delta$macro.s,xlab='Macroalgal Cover (%)',ylim=c(-0.87,0.6)
+     ,ylab='',type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l')
+axis(1,at=c(-0.58,0.22,1.01,1.80,2.59,3.38,4.17),labels=c(0,10,20,30,40,50,60),cex.axis=1.7)
+axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
+abline(h=0,lty=2)
+polygon(c(pred_MA_lD_out$x,rev(pred_MA_lD_out$x)),c(pred_MA_lD_out$up80,rev(pred_MA_lD_out$down80)),col=rgb(91,188,214,105,max=255),border=NA)
+polygon(c(pred_MA_hD_out$x,rev(pred_MA_hD_out$x)),c(pred_MA_hD_out$up80,rev(pred_MA_hD_out$down80)),col=rgb(249,132,0,105,max=255),border=NA)
+# points(B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)]~delta$macro.s,pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
+
+# temp <- data.frame(x=delta$macro.s,y=B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)],z=delta$dhw.s)
+# points(temp$x[temp$z <= quantile(temp$z,0.75) & temp$z >= quantile(temp$z,0.25)],temp$y[temp$z <= quantile(temp$z,0.75) & temp$z >= quantile(temp$z,0.25)],pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
+# points(temp$x[temp$z >= quantile(temp$z,0.75)],temp$y[temp$z >= quantile(temp$z,0.75)],pch=21,bg=rgb(249,132,0,200,max=255),cex=1.2)
+# points(temp$x[temp$z <= quantile(temp$z,0.25)],temp$y[temp$z <= quantile(temp$z,0.25)],pch=21,bg=rgb(91,188,214,200,max=255),cex=1.2)
+
+temp <- data.frame(x=delta$macro.s,y=B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)],z=delta$dhw_max)
+
+points(temp$x[temp$z <= 4 & temp$z >= 1.5],temp$y[temp$z <= 4 & temp$z >= 1.5],pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
+
+points(temp$x[temp$z >= 4],temp$y[temp$z >= 4],pch=21,bg=rgb(249,132,0,200,max=255),cex=1.2)
+
+points(temp$x[temp$z >= 0 & temp$z <= 1.5],temp$y[temp$z >= 0 & temp$z <= 1.5],pch=21,bg=rgb(91,188,214,200,max=255),cex=1.2)
+
+
+text(-0.20,.58,'A',cex=2,pos=2,font=2)
+
+legend(0.3,0.72,legend=c('DHW Max = 1','DHW Max = 6'),pch=22,pt.bg=c(rgb(91,188,214,200,max=255),rgb(249,132,0,200,max=255)),col='white',cex=1.4,pt.cex=4,bty='n')
+legend(2.5,0.72,legend=c('DHW Max < 1.5','DHW Max > 4'),pch=21,pt.bg=c(rgb(91,188,214,200,max=255),rgb(249,132,0,200,max=255)),col='black',cex=1.4,pt.cex=1.5,bty='n')
+
+# Urchin
+plot(dat$B_2~delta$urchin.s,ylim=c(-0.87,0.6),xlab=expression("Urchin Abundance"~~bgroup("(",'100 '*m^{-2},")")),
+     ylab=expression(paste('Change in Coral Cover (',Delta,')')),type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l',xlim=c(-1,3.4),mgp=c(3.2,1,0))
+axis(1,at=c(-0.89,-0.48,0.54,1.87,3.23),labels=c(0,1,10,100,1000),cex.axis=1.7)
+axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
+abline(h=0,lty=2)
+polygon(c(pred_urchin_out$x,rev(pred_urchin_out$x)),c(pred_urchin_out$up80,rev(pred_urchin_out$down80)),col=rgb(190,190,190,155,max=255),border=NA)
+points(B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)]~delta$urchin.s,pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
+text(-0.65,.58,'B',cex=2,pos=2,font=2)
+
+# Depth
+plot(dat$B_2~delta$depth.s,xlab='Depth (m)',ylim=c(-0.87,0.6)
+     ,ylab='',type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l',xlim=c(-2,3.3))
+axis(1,at=c(-1.88,-0.55,0.77,2.10,3.42),labels=c(0,5,10,15,20),cex.axis=1.7)
+axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
+abline(h=0,lty=2)
+polygon(c(pred_depth_lD_out$x,rev(pred_depth_lD_out$x)),c(pred_depth_lD_out$up80,rev(pred_depth_lD_out$down80)),col=rgb(91,188,214,105,max=255),border=NA)
+polygon(c(pred_depth_hD_out$x,rev(pred_depth_hD_out$x)),c(pred_depth_hD_out$up80,rev(pred_depth_hD_out$down80)),col=rgb(249,132,0,105,max=255),border=NA)
+# points(B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)]~delta$depth.s,pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
+
+temp <- data.frame(x=delta$depth.s,y=B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)],z=delta$dhw_max)
+
+points(temp$x[temp$z <= 4 & temp$z >= 1.5],temp$y[temp$z <= 4 & temp$z >= 1.5],pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
+
+points(temp$x[temp$z >= 4],temp$y[temp$z >= 4],pch=21,bg=rgb(249,132,0,200,max=255),cex=1.2)
+
+points(temp$x[temp$z >= 0 & temp$z <= 1.5],temp$y[temp$z >= 0 & temp$z <= 1.5],pch=21,bg=rgb(91,188,214,200,max=255),cex=1.2)
+
+text(-1.58,.58,'C',cex=2,pos=2,font=2)
+
+# mtext(expression(paste('Change in Coral Cover (',Delta,')')), outer=T,side=2,cex=1.5,line=0.5)
+dev.off()
+
+
 # supplemental figure DHW x Macro -----------------------------------------
 temp <- data.frame(macro.s = delta$macro.s, macro = delta$macro) 
 temp <- temp %>% mutate(macro_bins = cut(macro, breaks = c(-Inf,0.05,0.25,Inf)))
