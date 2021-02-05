@@ -39,7 +39,7 @@ y.new_sum <- summary(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]
 y.new_out <- data.frame(ynew=y.new_sum$quantiles[,'50%'])
 
 png(file='outputs/FigureS4.png',height=1800,width=2000,res=300)
-plot(y.new_out$ynew,mod_data$y,xlab='Predicted',ylab='Observed',ylim=c(0,1),xlim=c(0,1)); abline(a=0,b=1,col='red',lwd=2)
+plot(y.new_out$ynew~mod_data$y,ylab='Predicted',xlab='Observed',ylim=c(0,1),xlim=c(0,1)); abline(a=0,b=1,col='red',lwd=2)
 dev.off()
 
 # plot residuals
@@ -97,6 +97,11 @@ xy <- spTransform(xy,CRS("+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=150 +x_0=0 +y_0=0 
 points(xy,pch=21,bg='dodgerblue',cex=1.6)
 dev.off()
 
+loc_n <- coords %>% group_by(Location) %>% summarise(Lat=median(Lat),Long=median(Long),n=length(unique(new_id))) %>% ungroup()
+xy <- loc_n
+xy <- SpatialPointsDataFrame(data=xy,coords=xy[c('Long','Lat')], proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+xy <- spTransform(xy,CRS("+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=150 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+points(xy,pch=21,bg='dodgerblue',cex=(sqrt(xy$n)/1.25))
 
 # Figure 2 ----------------------------------------------------------------
 # calculate confidence intervals
@@ -158,6 +163,19 @@ beta_d_80_ordered$col_use <- ifelse(
 # plot
 png(file='outputs/Figure2.png',height=2000,width=2000,res=300)
 par(mar=c(4,12,1,2),mfrow=c(1,1))
+plot(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),type='n',yaxt='n',ylab='',xlab=expression(gamma),xlim=c(-0.27,0.27),cex.lab=1.5)
+abline(v=0,lty=2,lwd=1.5)
+plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up,li=beta_d_80_ordered$beta_down,
+                pch=NA,err='x',sfrac=0,col=beta_d_80_ordered$col_use,lwd=0.7,add=T)
+plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up90,li=beta_d_80_ordered$beta_down90,
+                err='x',yaxt='n',ylab='',pch=NA,lwd=3,add=T,sfrac=0,col=beta_d_80_ordered$col_use)
+plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up80,li=beta_d_80_ordered$beta_down80,
+                err='x',yaxt='n',ylab='',pch=NA,lwd=6,add=T,sfrac=0,col=beta_d_80_ordered$col_use)
+axis(2,at=seq(1:nrow(beta_d_80)),labels=beta_d_80_ordered$driver_name,las=2)
+dev.off()
+
+pdf('outputs/Figure2.pdf',height=5.75,width=(4.75)*1)
+par(mar=c(4,11,1,1),mfrow=c(1,1))
 plot(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),type='n',yaxt='n',ylab='',xlab=expression(gamma),xlim=c(-0.27,0.27),cex.lab=1.5)
 abline(v=0,lty=2,lwd=1.5)
 plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up,li=beta_d_80_ordered$beta_down,
