@@ -14,16 +14,16 @@
 library(rjags) # v.4.9 linked to JAGS 4.3.0
 library(dplyr) # v.0.8.3
 library(wesanderson)
-library(rgdal) # v.1.4-4 linked to GDAL 2.4.2
 library(ggplot2) # v.3.3.0
+library(GGally)
 
 # inputs ------------------------------------------------------------------
 # read in files created by 1_run_model.R
-zmPrp <- readRDS('outputs/change_1yr_out_coda.Rdata')
-mod_data <- read.csv('outputs/change_1yr_out_inputdata.csv')
-locs <- read.csv('outputs/change_1yr_out_locs_all.csv')
-coords <- read.csv('outputs/coord_export.csv')
-delta <- read.csv('outputs/change_1yr_out_delta.csv')
+zmPrp <- readRDS('outputs/change_1yr_out_coda_oceang05.Rdata')
+mod_data <- read.csv('outputs/change_1yr_out_inputdata_oceang05.csv')
+locs <- read.csv('outputs/change_1yr_out_locs_all_oceang05.csv')
+coords <- read.csv('outputs/coord_exportg05.csv')
+delta <- read.csv('outputs//change_1yr_out_delta_oceang05.csv')
 
 # Model checks ------------------------------------------------------------
 grepgo <- grep('\\bpval.mean\\b',colnames(zmPrp[[1]]))
@@ -38,7 +38,7 @@ grepgo <- grep('y.new',colnames(zmPrp[[1]]))
 y.new_sum <- summary(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))
 y.new_out <- data.frame(ynew=y.new_sum$quantiles[,'50%'])
 
-png(file='outputs/FigureS4.png',height=1800,width=2000,res=300)
+png(file='outputs/FigureS4_o_all.png',height=1800,width=2000,res=300)
 plot(y.new_out$ynew~mod_data$y,ylab='Predicted',xlab='Observed',ylim=c(0,1),xlim=c(0,1)); abline(a=0,b=1,col='red',lwd=2)
 dev.off()
 
@@ -53,21 +53,29 @@ gelman_supp_table <- data.frame(var=c('DHW Max','Macroalgae','Parrotfish','SSTA 
                                 gel=gelman.diag(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))[[1]][,1])
 grepgo <- grep('\\br\\b',colnames(zmPrp[[1]]))
 gelman_supp_table <- rbind(gelman_supp_table,data.frame(var='r',
-                                    gel=gelman.diag(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))[[1]][,1]))
+                                                        gel=gelman.diag(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))[[1]][,1]))
 grepgo <- grep('\\brho\\b',colnames(zmPrp[[1]]))
 gelman_supp_table <- rbind(gelman_supp_table,data.frame(var='rho',
-                                     gel=gelman.diag(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))[[1]][,1]))
+                                                        gel=gelman.diag(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))[[1]][,1]))
 grepgo <- grep('sigma',colnames(zmPrp[[1]]))
 gelman_supp_table <- rbind(gelman_supp_table,data.frame(var=c('sigma 1','sigma 2','sigma b0'),
-                                    gel=gelman.diag(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))[[1]][,1]))
-write.csv(gelman_supp_table, 'outputs/gelman_table_for_supp.csv',row.names=F)
+                                                        gel=gelman.diag(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))[[1]][,1]))
+grepgo <- grep('mu_ocean',colnames(zmPrp[[1]]))
+gelman_supp_table <- rbind(gelman_supp_table,data.frame(var=c('mu_ocean 1','mu_ocean 2','mu_ocean 3'),
+                                                        gel=gelman.diag(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))[[1]][,1]))
+grepgo <- grep('mu_all',colnames(zmPrp[[1]]))
+gelman_supp_table <- rbind(gelman_supp_table,data.frame(var=c('mu_all'),
+                                                        gel=gelman.diag(mcmc.list(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo]))[[1]][,1]))
+gelman_supp_table
+write.csv(gelman_supp_table, 'outputs/gelman_table_for_supp_o_all.csv',row.names=F)
 
 # correlation among predictors
 cor(delta[c('dhw.s','macro.s','parrot.s','ssta_freq_sd.s','temp_max.s','depth.s','exposure_fac','cyclone_mag.s','turbidity.s','urchin.s')])
 temp <- delta[c('dhw.s','macro.s','parrot.s','ssta_freq_sd.s','temp_max.s','depth.s','exposure_fac','cyclone_mag.s','turbidity.s','urchin.s')]
 colnames(temp) <- c('DHW Max','Macroalgae','Parrotfish','SSTA Freq SD','Temp Max','Depth','Wave Exposure','Cyclones','Turbidity','Urchins')
-png(file='outputs/FigureS2.png',height=3200,width=3400,res=300)
-GGally::ggpairs(temp) + theme_classic() +
+png(file='outputs/FigureS2_o_all.png',height=3200,width=3400,res=300)
+ggpairs(temp) + 
+  theme_classic() +
   theme(
     axis.ticks = element_line(colour = "black", size = 0.5),
     axis.ticks.length=unit(.25, "cm"),
@@ -80,28 +88,8 @@ dev.off()
 
 # Figure 1 ----------------------------------------------------------------
 # map of study sites
+# final figure made in ArcGIS
 
-wlrd.p <- readOGR('data/shapefiles/TM_WORLD_BORDERS_SIMPL_PC150.shp') # from NASA (https://github.com/nasa/World-Wind-Java) and reprojected with Pacific in center
-
-png(file='outputs/Figure1.png',height=1400,width=4300,res=300)
-par(mfrow=c(1,1),mgp=c(0.5,0.6,0), mar=c(1,1,1,1))
-plot(wlrd.p,ylim=c(-4400000,4400000),xlim=c(1600000,2400000), col='grey90',border='grey70')
-axis(1,at=c(-10018754.17,3339584.724,16697920),lab=c('60°E','180°','60°W'),las=1,tcl=0.45,mgp=c(-1,-1.3,0),cex.axis=1.3)
-axis(2, at=c(23*111319.4666666667,0,-23*111319.4666666667),labels=c('23°N','0°','23°S'),las=2,tcl=0.45,mgp=c(-1,-0.6,0),hadj=0,cex.axis=1.3)
-axis(3,at=c(-10018754.17,3339584.724,16697920),lab=c('','',''),las=1,tcl=0.45,mgp=c(-1,-1.3,0))
-axis(4, at=c(23*111319.4666666667,0,-23*111319.4666666667),labels=c('','',''),las=2,tcl=0.45,mgp=c(-1,-0.6,0),hadj=0)
-box()
-xy <- coords
-xy <- SpatialPointsDataFrame(data=xy,coords=xy[c('Long','Lat')], proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-xy <- spTransform(xy,CRS("+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=150 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0"))
-points(xy,pch=21,bg='dodgerblue',cex=1.6)
-dev.off()
-
-loc_n <- coords %>% group_by(Location) %>% summarise(Lat=median(Lat),Long=median(Long),n=length(unique(new_id))) %>% ungroup()
-xy <- loc_n
-xy <- SpatialPointsDataFrame(data=xy,coords=xy[c('Long','Lat')], proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
-xy <- spTransform(xy,CRS("+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=150 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0"))
-points(xy,pch=21,bg='dodgerblue',cex=(sqrt(xy$n)/1.25))
 
 # Figure 2 ----------------------------------------------------------------
 # calculate confidence intervals
@@ -149,7 +137,12 @@ for(i in 1:length(grepgo)){
 beta_d_80_ordered <- beta_d_80 %>% mutate(driver_name=c('DHW Max','Macroalgae','Parrotfish','SSTA Freq SD','Temp Max','Depth','Wave Exposure','Cyclones','Turbidity','Urchins','DHW Max*Macroalgae','DHW Max*Parrotfish','DHW Max*SSTA Freq SD','DHW Max*Temp Max','DHW Max*Depth','DHW Max*Wave Exposure','DHW Max*Cyclones','DHW Max*Turbidity','DHW Max*Urchins')) %>% arrange(desc(beta))
 
 # move dhw_max*temp_max down one so red bars are together
-beta_d_80_ordered <- beta_d_80_ordered[c(1:11,14,12,17,13,15,18,16,19),]
+# beta_d_80_ordered <- beta_d_80_ordered[c(1:13,14,17,15,18,16,19),]
+
+driver_order <- data.frame(driver_name=c("DHW Max*Wave Exposure", "DHW Max*Turbidity", "Temp Max", "Parrotfish", "Cyclones", "SSTA Freq SD", "DHW Max*Cyclones", "DHW Max*Parrotfish", "DHW Max*Urchins", "Depth", "DHW Max*SSTA Freq SD", "DHW Max*Temp Max", "DHW Max*Depth", "Turbidity", "Wave Exposure", "Urchins", "DHW Max*Macroalgae", "Macroalgae", "DHW Max"))
+
+beta_d_80_ordered <- left_join(driver_order,beta_d_80_ordered,by='driver_name')
+
 
 # assign color
 beta_d_80_ordered$col_use <- ifelse(
@@ -160,29 +153,22 @@ beta_d_80_ordered$col_use <- ifelse(
   beta_d_80_ordered$beta > 0 & round(beta_d_80_ordered$beta_down90,2) > 0, wes_palette("Zissou1")[1],ifelse(
     beta_d_80_ordered$beta > 0 & round(beta_d_80_ordered$beta_down80,2) > 0, wes_palette("Zissou1")[2],beta_d_80_ordered$col_use))
 
-# plot
-png(file='outputs/Figure2.png',height=2000,width=2000,res=300)
-par(mar=c(4,12,1,2),mfrow=c(1,1))
-plot(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),type='n',yaxt='n',ylab='',xlab=expression(gamma),xlim=c(-0.27,0.27),cex.lab=1.5)
-abline(v=0,lty=2,lwd=1.5)
-plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up,li=beta_d_80_ordered$beta_down,
-                pch=NA,err='x',sfrac=0,col=beta_d_80_ordered$col_use,lwd=0.7,add=T)
-plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up90,li=beta_d_80_ordered$beta_down90,
-                err='x',yaxt='n',ylab='',pch=NA,lwd=3,add=T,sfrac=0,col=beta_d_80_ordered$col_use)
-plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up80,li=beta_d_80_ordered$beta_down80,
-                err='x',yaxt='n',ylab='',pch=NA,lwd=6,add=T,sfrac=0,col=beta_d_80_ordered$col_use)
-axis(2,at=seq(1:nrow(beta_d_80)),labels=beta_d_80_ordered$driver_name,las=2)
-dev.off()
+# write.csv(beta_d_80_ordered, 'outputs/change_1yr_out_beta_ordered_ocean_g05_all.csv',row.names=F)
 
-pdf('outputs/Figure2.pdf',height=5.75,width=(4.75)*1)
+# plot
+
+pdf('outputs/Figure2_o_all.pdf',height=5.75,width=(4.75)*1)
 par(mar=c(4,11,1,1),mfrow=c(1,1))
-plot(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),type='n',yaxt='n',ylab='',xlab=expression(gamma),xlim=c(-0.27,0.27),cex.lab=1.5)
+plot(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),type='n',yaxt='n',ylab='',xlab=expression(gamma),xlim=c(-0.34,0.34),cex.lab=1.5)
 abline(v=0,lty=2,lwd=1.5)
-plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up,li=beta_d_80_ordered$beta_down,
-                pch=NA,err='x',sfrac=0,col=beta_d_80_ordered$col_use,lwd=0.7,add=T)
-plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up90,li=beta_d_80_ordered$beta_down90,
+plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),
+                ui=beta_d_80_ordered$beta_up,li=beta_d_80_ordered$beta_down,
+                pch=NA,err='x',sfrac=0,col=beta_d_80_ordered$col_use,lwd=1,add=T)
+plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),
+                ui=beta_d_80_ordered$beta_up90,li=beta_d_80_ordered$beta_down90,
                 err='x',yaxt='n',ylab='',pch=NA,lwd=3,add=T,sfrac=0,col=beta_d_80_ordered$col_use)
-plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),ui=beta_d_80_ordered$beta_up80,li=beta_d_80_ordered$beta_down80,
+plotrix::plotCI(beta_d_80_ordered$beta,seq(1:nrow(beta_d_80)),
+                ui=beta_d_80_ordered$beta_up80,li=beta_d_80_ordered$beta_down80,
                 err='x',yaxt='n',ylab='',pch=NA,lwd=6,add=T,sfrac=0,col=beta_d_80_ordered$col_use)
 axis(2,at=seq(1:nrow(beta_d_80)),labels=beta_d_80_ordered$driver_name,las=2)
 dev.off()
@@ -192,7 +178,7 @@ driver_name <- c('DHW Max','Macroalgae','Parrotfish','SSTA Freq SD','Temp Max','
 crit <- 0.90
 grepgo <- grep('\\bbeta_d\\b',colnames(zmPrp[[1]]))
 
-png(file='outputs/FigureS1.png',height=2000,width=2700,res=300)
+png(file='outputs/FigureS1_o_all.png',height=2000,width=2700,res=300)
 par(mfrow=c(4,5),mgp=c(1.7,.7,0),mar=c(3,2,1,1),oma=c(0,2,0,0))
 for(i in 1:length(grepgo)){
   poster <- c(zmPrp[[1]][,grepgo[i]],zmPrp[[2]][,grepgo[i]],zmPrp[[3]][,grepgo[i]])
@@ -221,13 +207,15 @@ B_hat_out <- data.frame(Bhat=B_hat_sum$quantiles[,'50%'],
 # partial predictions
 pred_out <- function(pred_name){
   grepgo <- grep(paste0('\\b',pred_name,'\\b'),colnames(zmPrp[[1]]))
-  out <- data.frame(mean=rep(NA,length(grepgo))); out$up <- NA; out$down <- NA; out$up80 <- NA; out$down80 <- NA
+  out <- data.frame(mean=rep(NA,length(grepgo))); out$up <- NA; out$down <- NA; out$up80 <- NA; out$down80 <- NA; out$up50 <- NA; out$down50 <- NA
   for(i in 1:length(grepgo)){
     out$mean[i] <- quantile(c(zmPrp[[1]][,grepgo[i]],zmPrp[[2]][,grepgo[i]],zmPrp[[3]][,grepgo[i]]),0.5)
     out$up[i] <- quantile(c(zmPrp[[1]][,grepgo[i]],zmPrp[[2]][,grepgo[i]],zmPrp[[3]][,grepgo[i]]),0.975)
     out$down[i] <- quantile(c(zmPrp[[1]][,grepgo[i]],zmPrp[[2]][,grepgo[i]],zmPrp[[3]][,grepgo[i]]),0.025)
     out$up80[i] <- quantile(c(zmPrp[[1]][,grepgo[i]],zmPrp[[2]][,grepgo[i]],zmPrp[[3]][,grepgo[i]]),0.90)
     out$down80[i] <- quantile(c(zmPrp[[1]][,grepgo[i]],zmPrp[[2]][,grepgo[i]],zmPrp[[3]][,grepgo[i]]),0.10)
+    out$up50[i] <- quantile(c(zmPrp[[1]][,grepgo[i]],zmPrp[[2]][,grepgo[i]],zmPrp[[3]][,grepgo[i]]),0.750)
+    out$down50[i] <- quantile(c(zmPrp[[1]][,grepgo[i]],zmPrp[[2]][,grepgo[i]],zmPrp[[3]][,grepgo[i]]),0.25)
   }
   return(out)
 }
@@ -266,115 +254,76 @@ ax_backtrans <- data.frame(B_2 = c(-0.8,-0.6,-0.4,-0.2,0,0.2,0.4,0.6))
 ax_backtrans$delta <- round(predict(delta_lm, newdata=ax_backtrans),2)
 
 delta_lm_back <- lm(B_2~delta,data=dat)
-ax_forwtrans <- data.frame(delta = c(-.15,-0.1,-0.05,0,0.05,0.1))
+ax_forwtrans <- data.frame(delta = c(-.15,-0.1,-0.05,0,0.05,0.1,0.15))
 ax_forwtrans$B_2 <- round(predict(delta_lm_back, newdata=ax_forwtrans),2)
 
 dhw_lm <- lm(dhw.s~dhw_max,data=delta)
 dhw_ax <- data.frame(dhw_max=c(0,4,8,12,16))
 dhw_ax$dhw.s <- predict(dhw_lm,newdata=dhw_ax)
 
-png(file='outputs/Figure3.png',height=3450,width=1500,res=300)
-par(mfrow=c(3,1),mar=c(4.1,2,1,1),oma=c(0,3,0,0),mgp=c(2.8,1,0))
+
+pdf(file='outputs/Figure3_rev_o_all.pdf',height=11,width=4)
+par(mfrow=c(3,1),mar=c(4.1,5.2,1,1),oma=c(0,0,0,0),mgp=c(2.8,1,0))
 
 # Macro
-plot(dat$B_2~delta$macro.s,xlab='Macroalgal Cover (%)',ylim=c(-0.8,0.6)
+plot(dat$B_2~delta$macro.s,xlab='Macroalgal Cover (%)',ylim=c(-1,1),xlim=c(-0.7,4.75)
      ,ylab='',type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l')
 axis(1,at=c(-0.58,0.22,1.01,1.80,2.59,3.38,4.17),labels=c(0,10,20,30,40,50,60),cex.axis=1.7)
-axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
+axis(2,at=ax_forwtrans$B_2,labels=c(-15,'',-5,0,5,'',15),cex.axis=1.7)
 abline(h=0,lty=2)
-polygon(c(pred_MA_lD_out$x,rev(pred_MA_lD_out$x)),c(pred_MA_lD_out$up80,rev(pred_MA_lD_out$down80)),col=rgb(91,188,214,105,max=255),border=NA)
-polygon(c(pred_MA_hD_out$x,rev(pred_MA_hD_out$x)),c(pred_MA_hD_out$up80,rev(pred_MA_hD_out$down80)),col=rgb(249,132,0,105,max=255),border=NA)
-points(B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)]~delta$macro.s,pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
-text(-0.20,.6,'A',cex=2,pos=2)
-
-# Urchin
-plot(dat$B_2~delta$urchin.s,ylim=c(-0.8,0.6),xlab=expression("Urchin abundance"~~bgroup("(",'100 '*m^{-2},")")),
-     ylab='',type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l',xlim=c(-1,3.3),mgp=c(3.2,1,0))
-axis(1,at=c(-0.89,-0.48,0.54,1.87,3.23),labels=c(0,1,10,100,1000),cex.axis=1.7)
-axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
-abline(h=0,lty=2)
-polygon(c(pred_urchin_out$x,rev(pred_urchin_out$x)),c(pred_urchin_out$up80,rev(pred_urchin_out$down80)),col=rgb(190,190,190,155,max=255),border=NA)
-points(B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)]~delta$urchin.s,pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
-text(-0.65,.6,'B',cex=2,pos=2)
-
-# Depth
-plot(dat$B_2~delta$depth.s,xlab='Depth (m)',ylim=c(-0.8,0.6)
-     ,ylab='',type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l',xlim=c(-2,3.7))
-axis(1,at=c(-1.88,-0.55,0.77,2.10,3.42),labels=c(0,5,10,15,20),cex.axis=1.7)
-axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
-abline(h=0,lty=2)
-polygon(c(pred_depth_lD_out$x,rev(pred_depth_lD_out$x)),c(pred_depth_lD_out$up80,rev(pred_depth_lD_out$down80)),col=rgb(91,188,214,105,max=255),border=NA)
-polygon(c(pred_depth_hD_out$x,rev(pred_depth_hD_out$x)),c(pred_depth_hD_out$up80,rev(pred_depth_hD_out$down80)),col=rgb(249,132,0,105,max=255),border=NA)
-points(B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)]~delta$depth.s,pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
-text(-1.58,.6,'C',cex=2,pos=2)
-
-mtext(expression(paste('Change in coral cover (',Delta,')')), outer=T,side=2,cex=1.5,line=0.5)
-dev.off()
-
-
-pdf(file='outputs/Figure3_rev.pdf',height=10,width=4)
-par(mfrow=c(3,1),mar=c(4.1,5.1,1,1),oma=c(0,0,0,0),mgp=c(2.8,1,0))
-
-# Macro
-plot(dat$B_2~delta$macro.s,xlab='Macroalgal Cover (%)',ylim=c(-0.87,0.6)
-     ,ylab='',type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l')
-axis(1,at=c(-0.58,0.22,1.01,1.80,2.59,3.38,4.17),labels=c(0,10,20,30,40,50,60),cex.axis=1.7)
-axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
-abline(h=0,lty=2)
-polygon(c(pred_MA_lD_out$x,rev(pred_MA_lD_out$x)),c(pred_MA_lD_out$up80,rev(pred_MA_lD_out$down80)),col=rgb(91,188,214,105,max=255),border=NA)
-polygon(c(pred_MA_hD_out$x,rev(pred_MA_hD_out$x)),c(pred_MA_hD_out$up80,rev(pred_MA_hD_out$down80)),col=rgb(249,132,0,105,max=255),border=NA)
-# points(B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)]~delta$macro.s,pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
-
-# temp <- data.frame(x=delta$macro.s,y=B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)],z=delta$dhw.s)
-# points(temp$x[temp$z <= quantile(temp$z,0.75) & temp$z >= quantile(temp$z,0.25)],temp$y[temp$z <= quantile(temp$z,0.75) & temp$z >= quantile(temp$z,0.25)],pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
-# points(temp$x[temp$z >= quantile(temp$z,0.75)],temp$y[temp$z >= quantile(temp$z,0.75)],pch=21,bg=rgb(249,132,0,200,max=255),cex=1.2)
-# points(temp$x[temp$z <= quantile(temp$z,0.25)],temp$y[temp$z <= quantile(temp$z,0.25)],pch=21,bg=rgb(91,188,214,200,max=255),cex=1.2)
-
+polygon(c(pred_MA_lD_out$x,rev(pred_MA_lD_out$x)),c(pred_MA_lD_out$up50,rev(pred_MA_lD_out$down50)),col=rgb(91,188,214,105,max=255),border=NA)
+polygon(c(pred_MA_hD_out$x,rev(pred_MA_hD_out$x)),c(pred_MA_hD_out$up50,rev(pred_MA_hD_out$down50)),col=rgb(249,132,0,105,max=255),border=NA)
 temp <- data.frame(x=delta$macro.s,y=B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)],z=delta$dhw_max)
 
 points(temp$x[temp$z <= 4 & temp$z >= 1.5],temp$y[temp$z <= 4 & temp$z >= 1.5],pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
-
+points(temp$x[temp$z >= 0 & temp$z <= 1.5],temp$y[temp$z >= 0 & temp$z <= 1.5],pch=21,bg=rgb(91,188,214,200,max=255),cex=1.2)
 points(temp$x[temp$z >= 4],temp$y[temp$z >= 4],pch=21,bg=rgb(249,132,0,200,max=255),cex=1.2)
 
-points(temp$x[temp$z >= 0 & temp$z <= 1.5],temp$y[temp$z >= 0 & temp$z <= 1.5],pch=21,bg=rgb(91,188,214,200,max=255),cex=1.2)
+text(-0.20,.9,'A',cex=2,pos=2,font=2)
 
-
-text(-0.20,.58,'A',cex=2,pos=2,font=2)
-
-legend(0.3,0.72,legend=c('DHW Max = 1','DHW Max = 6'),pch=22,pt.bg=c(rgb(91,188,214,200,max=255),rgb(249,132,0,200,max=255)),col='white',cex=1.4,pt.cex=4,bty='n')
-legend(2.5,0.72,legend=c('DHW Max < 1.5','DHW Max > 4'),pch=21,pt.bg=c(rgb(91,188,214,200,max=255),rgb(249,132,0,200,max=255)),col='black',cex=1.4,pt.cex=1.5,bty='n')
+legend(0.1,1.1,legend=c('DHW Max = 1','DHW Max = 6'),pch=22,pt.bg=c(rgb(91,188,214,200,max=255),rgb(249,132,0,200,max=255)),col='white',cex=1.4,pt.cex=4,bty='n')
+legend(2.45,1.1,legend=c('DHW Max < 1.5','DHW Max > 4'),pch=21,pt.bg=c(rgb(91,188,214,200,max=255),rgb(249,132,0,200,max=255)),col='black',cex=1.4,pt.cex=1.5,bty='n')
 
 # Urchin
-plot(dat$B_2~delta$urchin.s,ylim=c(-0.87,0.6),xlab=expression("Urchin Abundance"~~bgroup("(",'100 '*m^{-2},")")),
-     ylab=expression(paste('Change in Coral Cover (',Delta,')')),type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l',xlim=c(-1,3.4),mgp=c(3.2,1,0))
+plot(dat$B_2~delta$urchin.s,ylim=c(-1,1),xlab=expression("Urchin Abundance"~~bgroup("(",'100 '*m^{-2},")")),
+     ylab="",type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l',xlim=c(-1,3.4),mgp=c(3.7,1,0))
 axis(1,at=c(-0.89,-0.48,0.54,1.87,3.23),labels=c(0,1,10,100,1000),cex.axis=1.7)
-axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
+axis(2,at=ax_forwtrans$B_2,labels=c(-15,'',-5,0,5,'',15),cex.axis=1.7)
 abline(h=0,lty=2)
-polygon(c(pred_urchin_out$x,rev(pred_urchin_out$x)),c(pred_urchin_out$up80,rev(pred_urchin_out$down80)),col=rgb(190,190,190,155,max=255),border=NA)
+polygon(c(pred_urchin_out$x,rev(pred_urchin_out$x)),c(pred_urchin_out$up50,rev(pred_urchin_out$down50)),col=rgb(190,190,190,155,max=255),border=NA)
 points(B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)]~delta$urchin.s,pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
-text(-0.65,.58,'B',cex=2,pos=2,font=2)
+text(-0.65,.9,'B',cex=2,pos=2,font=2)
 
-# Depth
-plot(dat$B_2~delta$depth.s,xlab='Depth (m)',ylim=c(-0.87,0.6)
-     ,ylab='',type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l',xlim=c(-2,3.3))
-axis(1,at=c(-1.88,-0.55,0.77,2.10,3.42),labels=c(0,5,10,15,20),cex.axis=1.7)
-axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
+#Exposure
+plot(dat$B_2~delta$exposure_fac,xlab='',ylim=c(-1,1),xlim=c(-0.5,1.5)
+     ,ylab='',type='n',xaxt='n',yaxt='n',cex.axis=1.7,cex.lab=1.7,bty='l')
+axis(1,at=c(0,1),labels=c('Sheltered','Exposed'),cex.axis=1.7)
+axis(2,at=ax_forwtrans$B_2,labels=c(-15,'',-5,0,5,'',15),cex.axis=1.7)
 abline(h=0,lty=2)
-polygon(c(pred_depth_lD_out$x,rev(pred_depth_lD_out$x)),c(pred_depth_lD_out$up80,rev(pred_depth_lD_out$down80)),col=rgb(91,188,214,105,max=255),border=NA)
-polygon(c(pred_depth_hD_out$x,rev(pred_depth_hD_out$x)),c(pred_depth_hD_out$up80,rev(pred_depth_hD_out$down80)),col=rgb(249,132,0,105,max=255),border=NA)
-# points(B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)]~delta$depth.s,pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
+rect(-0.25,pred_exposure_out$down50[1],-0.05,pred_exposure_out$up50[1],col=rgb(91,188,214,105,max=255),border=NA)
+rect(0.75,pred_exposure_out$down50[2],0.95,pred_exposure_out$up50[2],col=rgb(91,188,214,105,max=255),border=NA)
+rect(0.05,pred_exposure_out$down50[3],0.25,pred_exposure_out$up50[3],col=rgb(249,132,0,105,max=255),border=NA)
+rect(1.05,pred_exposure_out$down50[4],1.25,pred_exposure_out$up50[4],col=rgb(249,132,0,105,max=255),border=NA)
 
-temp <- data.frame(x=delta$depth.s,y=B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)],z=delta$dhw_max)
+temp <- data.frame(x=delta$exposure_fac,y=B_hat_out$Bhat[(nrow(delta)+1):nrow(B_hat_out)],z=delta$dhw_max)
+temp$y_grp <- 2
+temp$y_grp[temp$z <= 4 & temp$z >= 1.5] <- 1
+temp$y_grp[temp$z >= 4] <- 3
+temp$x_grp <- NA
+temp$x_grp[temp$y_grp==1 & temp$x==0] <- -0.15
+temp$x_grp[temp$y_grp==2 & temp$x==0] <- 0
+temp$x_grp[temp$y_grp==3 & temp$x==0] <- 0.15
+temp$x_grp[temp$y_grp==1 & temp$x==1] <- 0.85
+temp$x_grp[temp$y_grp==2 & temp$x==1] <- 1
+temp$x_grp[temp$y_grp==3 & temp$x==1] <- 1.15
 
-points(temp$x[temp$z <= 4 & temp$z >= 1.5],temp$y[temp$z <= 4 & temp$z >= 1.5],pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
+points(jitter(temp$x_grp[temp$y_grp==2],amount=0.05),temp$y[temp$y_grp==2],pch=21,bg=rgb(190,190,190,125,max=255),cex=1.2)
+points(jitter(temp$x_grp[temp$y_grp==1],amount=0.05),temp$y[temp$y_grp==1],pch=21,bg=rgb(91,188,214,200,max=255),cex=1.2)
+points(jitter(temp$x_grp[temp$y_grp==3],amount=0.05),temp$y[temp$y_grp==3],pch=21,bg=rgb(249,132,0,200,max=255),cex=1.2)
 
-points(temp$x[temp$z >= 4],temp$y[temp$z >= 4],pch=21,bg=rgb(249,132,0,200,max=255),cex=1.2)
+text(-0.35,.9,'C',cex=2,pos=2,font=2)
 
-points(temp$x[temp$z >= 0 & temp$z <= 1.5],temp$y[temp$z >= 0 & temp$z <= 1.5],pch=21,bg=rgb(91,188,214,200,max=255),cex=1.2)
-
-text(-1.58,.58,'C',cex=2,pos=2,font=2)
-
-# mtext(expression(paste('Change in Coral Cover (',Delta,')')), outer=T,side=2,cex=1.5,line=0.5)
+mtext(expression(paste('Change in % Coral Cover (',Delta,')')), outer=T,side=2,cex=1.1,line=-2,at=0.52)
 dev.off()
 
 
@@ -397,10 +346,10 @@ three_levels <- rbind(three_levels,data.frame(
   dhw.s = unique(delta$dhw.s[(delta$macro > 0.25)])
 ))
 three_levels$pred <- NA; three_levels$pred_up80 <- NA; three_levels$pred_down80 <- NA
-
+three_levels$pred_up50 <- NA; three_levels$pred_down50 <- NA
 
 # save model output mcmc iterations
-grepgo <- grep('\\bmu_b0\\b',colnames(zmPrp[[1]]))
+grepgo <- grep('\\bmu_all\\b',colnames(zmPrp[[1]]))
 mu_b0 <- c(zmPrp[[1]][,grepgo],zmPrp[[2]][,grepgo],zmPrp[[3]][,grepgo])
 
 grepgo <- grep('\\bbeta_d\\b',colnames(zmPrp[[1]]))
@@ -434,38 +383,40 @@ for(j in 1:nrow(three_levels)){ # for each value of dhw
   three_levels$pred[j] <- median(mcmc_go)
   three_levels$pred_up80[j] <- quantile(mcmc_go,0.90)
   three_levels$pred_down80[j] <- quantile(mcmc_go,0.10)
+  three_levels$pred_up50[j] <- quantile(mcmc_go,0.75)
+  three_levels$pred_down50[j] <- quantile(mcmc_go,0.25)
 }
 
 
 
-png(file='outputs/Figure_S1.png',height=3450,width=1500,res=300)
+png(file='outputs/Figure_S1_o.png',height=3450,width=1500,res=300)
 par(mfrow=c(3,1),mar=c(4.1,2,1.5,1),oma=c(1,3,1,0),mgp=c(2.8,1,0))
 
-plot(dat$B_2[delta$macro <= 0.05] ~ delta$dhw.s[delta$macro <= 0.05],ylim=c(-1.1,0.75),xlim=c(-0.6,6),xaxt='n',type='p',col='dodgerblue',yaxt='n',xlab="",cex=1.3,cex.axis=1.7,cex.lab=1.7,bty='l',ylab='')
+plot(dat$B_2[delta$macro <= 0.05] ~ delta$dhw.s[delta$macro <= 0.05],ylim=c(-1.1,1),xlim=c(-0.6,6),xaxt='n',type='p',col='dodgerblue',yaxt='n',xlab="",cex=1.3,cex.axis=1.7,cex.lab=1.7,bty='l',ylab='')
 title('Macroalgae < 5%',adj=0.05,cex.main=2)
 abline(h=0,lty=2,col='grey')
 axis(1,at=dhw_ax$dhw.s,labels=dhw_ax$dhw_max,cex.axis=1.7)
-axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
+axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta*100,cex.axis=1.7)
 temp <- three_levels[three_levels$macro.s==macro_bin$binz[1],]; temp <- temp %>% arrange(temp$macro.s)
-plotrix::plotCI(temp$dhw.s,temp$pred,ui=temp$pred_up80,li=temp$pred_down80,err='y',sfrac=0,add=T)
+plotrix::plotCI(temp$dhw.s,temp$pred,ui=temp$pred_up50,li=temp$pred_down50,err='y',sfrac=0,add=T)
 
-plot(dat$B_2[(delta$macro > 0.05 & delta$macro <= 0.25)] ~ delta$dhw.s[(delta$macro > 0.05 & delta$macro <= 0.25)],ylim=c(-1.1,0.75),xlim=c(-0.6,6),xaxt='n',type='p',col='dodgerblue',yaxt='n',xlab="",cex=1.3,cex.axis=1.7,cex.lab=1.7,bty='l',ylab='')
+plot(dat$B_2[(delta$macro > 0.05 & delta$macro <= 0.25)] ~ delta$dhw.s[(delta$macro > 0.05 & delta$macro <= 0.25)],ylim=c(-1.1,1),xlim=c(-0.6,6),xaxt='n',type='p',col='dodgerblue',yaxt='n',xlab="",cex=1.3,cex.axis=1.7,cex.lab=1.7,bty='l',ylab='')
 title('Macroalgae 5-25% ',adj=0.05,cex.main=2)
 abline(h=0,lty=2,col='grey')
 axis(1,at=dhw_ax$dhw.s,labels=dhw_ax$dhw_max,cex.axis=1.7)
-axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
+axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta*100,cex.axis=1.7)
 temp <- three_levels[three_levels$macro.s==macro_bin$binz[2],]; temp <- temp %>% arrange(temp$macro.s)
-plotrix::plotCI(temp$dhw.s,temp$pred,ui=temp$pred_up80,li=temp$pred_down80,err='y',sfrac=0,add=T)
+plotrix::plotCI(temp$dhw.s,temp$pred,ui=temp$pred_up50,li=temp$pred_down50,err='y',sfrac=0,add=T)
 
-plot(dat$B_2[delta$macro > 0.25] ~ delta$dhw.s[delta$macro > 0.25],ylim=c(-1.1,0.75),xlim=c(-0.6,6),xaxt='n',type='p',col='dodgerblue',yaxt='n',xlab="",cex=1.3,cex.axis=1.7,cex.lab=1.7,bty='l',ylab='')
+plot(dat$B_2[delta$macro > 0.25] ~ delta$dhw.s[delta$macro > 0.25],ylim=c(-1.1,1),xlim=c(-0.6,6),xaxt='n',type='p',col='dodgerblue',yaxt='n',xlab="",cex=1.3,cex.axis=1.7,cex.lab=1.7,bty='l',ylab='')
 title('Macroalgae > 25% ',adj=0.05,cex.main=2)
 abline(h=0,lty=2,col='grey')
 axis(1,at=dhw_ax$dhw.s,labels=dhw_ax$dhw_max,cex.axis=1.7)
-axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta,cex.axis=1.7)
+axis(2,at=ax_forwtrans$B_2,labels=ax_forwtrans$delta*100,cex.axis=1.7)
 temp <- three_levels[three_levels$macro.s==macro_bin$binz[3],]; temp <- temp %>% arrange(temp$macro.s)
-plotrix::plotCI(temp$dhw.s,temp$pred,ui=temp$pred_up80,li=temp$pred_down80,err='y',sfrac=0,add=T)
+plotrix::plotCI(temp$dhw.s,temp$pred,ui=temp$pred_up50,li=temp$pred_down50,err='y',sfrac=0,add=T)
 
-mtext(expression(paste('Change in coral cover (',Delta,')')), outer=T,side=2,cex=1.5,line=0.5)
+mtext(expression(paste('Change in % Coral Cover (',Delta,')')), outer=T,side=2,cex=1.5,line=0.5)
 mtext('DHW Max', outer=T,side=1,cex=1.5,line=-0.5)
 dev.off()
 
