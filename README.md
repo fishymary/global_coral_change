@@ -5,8 +5,6 @@ This repository includes data and analysis scripts to accompany:
 # Local conditions magnify coral loss following marine heatwaves
 
 ### Author of analysis and code: Mary K Donovan
-### (in submission)
-
 -----
 
 ### Description:
