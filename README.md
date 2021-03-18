@@ -8,7 +8,7 @@ This repository includes data and analysis scripts to accompany:
 -----
 
 ### Description:
-This work analyzes the global [Reef Check dataset](reefcheck.org) to ask how local biotic and abiotic factors influence chance in coral cover following coral bleaching.
+This work analyzes the global [Reef Check dataset](http://reefcheck.org) to ask how local biotic and abiotic factors influence chance in coral cover following coral bleaching.
 
 ### Contents:
 #### Scripts:
