@@ -8,12 +8,12 @@ This repository includes data and analysis scripts to accompany:
 -----
 
 ### Description:
-This work analyzes the global [Reef Check dataset](http://reefcheck.org) to ask how local biotic and abiotic factors influence chance in coral cover following coral bleaching.
+This work analyzes the global [Reef Check](http://reefcheck.org) dataset to ask how local biotic and abiotic factors influence chance in coral cover following coral bleaching.
 
 ### Contents:
 #### Scripts:
 * **1_run_model.R:** R script that sets up data, defines JAGS model, and executes the model.
 * **2_summaries_and_visualizations.R:** R script that reads in output of 1_run_model.R and creates figures and tables
 
-#### Data:
-Data will be available on Dryad upon publication. 
+#### /data:
+Data files with coral cover and associated drivers from [Reef Check](http://reefcheck.org).
