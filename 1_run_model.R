@@ -55,11 +55,16 @@ change_1yr_complete <- change_1yr_complete %>% na.omit() %>% ungroup()
 change_1yr_complete <- change_1yr_complete %>% filter(!(bleaching > 0 & coral==0))
 
 # add a location column
-locs <- reef_check %>% distinct(new_id,Location)
+locs <- reef_check %>% distinct(new_id,Location) %>% ungroup()
 change_1yr_complete <- left_join(change_1yr_complete,locs,by='new_id')
 
-# remove lesser antilles (see supplemental material for analyses showing high leverage when included)
-change_1yr_complete <- change_1yr_complete %>% filter(!Location=='Lesser Antilles')
+# add Ocean
+ocean <- read.csv('data/ocean_year_newid.csv')
+ocean$Date <- ymd(ocean$Date)
+change_1yr_complete <- left_join(change_1yr_complete,ocean,by=c('new_id','Date'))
+
+# remove data before 2006
+change_1yr_complete <- change_1yr_complete %>% filter(!year < 2006)
 
 # create grouping variable for 'before' and 'after'
 change_1yr_complete$grp_fact <- ifelse(change_1yr_complete$grp=='before',0,1)
@@ -78,6 +83,10 @@ y <- ifelse(y == 1, 0.999, y)
 # create location vector
 loc_go <- change_1yr_complete %>% distinct(new_id,Date,id_fac,Location)
 loc_go$location <- as.numeric(as.factor(as.character(loc_go$Location)))
+
+# create ocean vector
+ocean_go <- change_1yr_complete %>% distinct(Location,Ocean)
+ocean_go$ocean <- as.numeric(as.factor(as.character(ocean_go$Ocean)))
 
 # create predictor matrix
 X_delta <- change_1yr_complete %>% distinct(new_id,Date,id_fac,dhw_max,parrot,ssta_freq_sd,temp_max,depth,exposure_fac,cyclone_mag,macro,turbidity,urchin_sum_all)
@@ -386,7 +395,7 @@ n_rep <- length(unique(change_1yr_complete$id_fac))
 # save data to use in map
 coord_export <- reef_check %>% distinct(new_id,Lat,Long,Location)
 coord_export <- coord_export[coord_export$new_id %in% change_1yr_complete$new_id,]
-write.csv(coord_export,'outputs/coord_export.csv',row.names=F)
+write.csv(coord_export,'outputs/coord_exportg05.csv',row.names=F)
 
 # define model input data
 data.in <- list(y=y,
@@ -398,6 +407,8 @@ data.in <- list(y=y,
                 C=ncol(X_delta),
                 location=loc_go$location,
                 K=length(unique(loc_go$location)),
+                ocean=ocean_go$ocean,
+                O=length(unique(ocean_go$ocean)),
                 X_new_DHW=X_new_DHW,
                 X_new_MA_lD=X_new_MA_lD,X_new_MA_hD=X_new_MA_hD,X_new_MA=X_new_MA,
                 X_new_depth_lD=X_new_depth_lD,X_new_depth_hD=X_new_depth_hD,
@@ -428,13 +439,19 @@ cat("model{
     mu.a ~ dnorm(0,0.001)
 
     for(k in 1:K){
-      b0[k] ~ dnorm(mu_b0,tau_b0)
+      b0[k] ~ dnorm(mu_ocean[ocean[k]],tau_b0)
     }
     tau_b0 ~ dgamma(0.5,0.5)
     sigma_b0 <- abs(xi)/sqrt(tau_b0)
     xi ~ dnorm(0, tau_xi)I(0,)
     tau_xi <- pow(prior.scale, -2)
-    mu_b0 ~ dnorm(0,0.001)
+    
+    for(o in 1:O){
+      mu_ocean[o] ~ dnorm(mu_all,tau_all)
+    }
+    tau_all ~ dgamma(0.5,0.5)
+    sigma_all <- abs(xi)/sqrt(tau_all)
+    mu_all ~ dnorm(0,0.001)
 
     for(c in 1:C){
         beta_d[c] ~ dnorm(0,0.001)
@@ -467,16 +484,16 @@ cat("model{
     
     # predictions
     for(z in 1:100){
-        pred_dhw[z] <- mu_b0 + inprod(beta_d,X_new_DHW[z,])
-        pred_MA[z] <- mu_b0 + inprod(beta_d,X_new_MA[z,])
-        pred_MA_lD[z] <- mu_b0 + inprod(beta_d,X_new_MA_lD[z,])
-        pred_MA_hD[z] <- mu_b0 + inprod(beta_d,X_new_MA_hD[z,])
-        pred_depth_lD[z] <- mu_b0 + inprod(beta_d,X_new_depth_lD[z,])
-        pred_depth_hD[z] <- mu_b0 + inprod(beta_d,X_new_depth_hD[z,])
-        pred_urchin[z] <- mu_b0 + inprod(beta_d,X_new_urchin[z,])
+        pred_dhw[z] <- mu_all + inprod(beta_d,X_new_DHW[z,])
+        pred_MA[z] <- mu_all + inprod(beta_d,X_new_MA[z,])
+        pred_MA_lD[z] <- mu_all + inprod(beta_d,X_new_MA_lD[z,])
+        pred_MA_hD[z] <- mu_all + inprod(beta_d,X_new_MA_hD[z,])
+        pred_depth_lD[z] <- mu_all + inprod(beta_d,X_new_depth_lD[z,])
+        pred_depth_hD[z] <- mu_all + inprod(beta_d,X_new_depth_hD[z,])
+        pred_urchin[z] <- mu_all + inprod(beta_d,X_new_urchin[z,])
     }
     for(z in 1:6){
-        pred_exposure[z] <- mu_b0 + inprod(beta_d,X_new_exposure[z,])
+        pred_exposure[z] <- mu_all + inprod(beta_d,X_new_exposure[z,])
     }
     
     }",file='change_bayes_wMultX.jags')
@@ -484,13 +501,14 @@ cat("model{
 
 # Run model ---------------------------------------------------------------
 n.adapt <- 1000; n.update <- 900000; n.iter <- 100000
+# n.adapt <- 100; n.update <- 900; n.iter <- 1000
 
 initfunc <- function(){return(list(
   # B=array(rnorm(2*(n_rep)),c((n_rep),2)),
   r = runif(1,30,40),
   rho = runif(1,-0.8,-0.5),
   mu.a=-1,
-  mu_b0=0,
+  mu_all=0,
   # sigma_b0=0.1,
   sigma=c(1,0.15),
   beta_d=runif(19,-0.1,0.1)
@@ -506,16 +524,16 @@ out <- clusterEvalQ(cl,{
   update(m, n.iter = n.update) 
   zmCore <- coda.samples(m, variable.names = c('delta','b0','r','rho','B.hat','mu.a','sigma','xi',
                                                'y.new','pval.mean','pval.sd','R2', 'a','b',
-                                               'beta_d','B','mu_b0','sigma_b0','beta_d_loc','sigma_beta','sigma',
+                                               'beta_d','B','sigma_b0','beta_d_loc','sigma_beta','sigma',
                                                'pred_dhw','pred_MA','pred_MA_lD','pred_MA_hD','pred_depth_lD','pred_depth_hD'
-                                               ,'pred_exposure','pred_urchin'), 
+                                               ,'pred_exposure','pred_urchin','mu_ocean','mu_all','tau_all'), 
                          n.iter=n.iter, n.thin=10)
   return(as.mcmc(zmCore))
 })
 zmPrp <- mcmc.list(out)
 stopCluster(cl)
 
-saveRDS(zmPrp,file='outputs/change_1yr_out_coda.Rdata')
+saveRDS(zmPrp,file='outputs/change_1yr_out_coda_oceang05.Rdata')
 
 
 
@@ -528,13 +546,13 @@ delta_out_1y <- data.frame(delta=delta_sum_1y$quantiles[,'50%'],
 
 data_out <- cbind(temp,X_save,delta_out_1y)
 
-write.csv(data_out, 'outputs/change_1yr_out_delta.csv',row.names = F)
+write.csv(data_out, 'outputs/change_1yr_out_delta_oceang05.csv',row.names = F)
 
-write.csv(data.frame(y=y,id_fac=change_1yr_complete$id_fac,change_1yr_complete$coral,change_1yr_complete$new_id,change_1yr_complete$grp,change_1yr_complete$Date), 'outputs/change_1yr_out_inputdata.csv',row.names=F)
+write.csv(data.frame(y=y,id_fac=change_1yr_complete$id_fac,change_1yr_complete$coral,change_1yr_complete$new_id,change_1yr_complete$grp,change_1yr_complete$Date), 'outputs/change_1yr_out_inputdata_oceang05.csv',row.names=F)
 
-write.csv(X_delta, 'outputs/change_1yr_out_Xdata.csv',row.names=F)
+write.csv(X_delta, 'outputs/change_1yr_out_Xdata_oceang05.csv',row.names=F)
 
-write.csv(loc_go %>% distinct(Location,location), 'outputs/change_1yr_out_locs.csv',row.names=F)
-write.csv(loc_go, 'outputs/change_1yr_out_locs_all.csv',row.names=F)
+write.csv(loc_go %>% distinct(Location,location), 'outputs/change_1yr_out_locs_oceang05.csv',row.names=F)
+write.csv(loc_go, 'outputs/change_1yr_out_locs_all_oceang05.csv',row.names=F)
 
 
