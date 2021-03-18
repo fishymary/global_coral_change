@@ -136,9 +136,6 @@ for(i in 1:length(grepgo)){
 # add label and order
 beta_d_80_ordered <- beta_d_80 %>% mutate(driver_name=c('DHW Max','Macroalgae','Parrotfish','SSTA Freq SD','Temp Max','Depth','Wave Exposure','Cyclones','Turbidity','Urchins','DHW Max*Macroalgae','DHW Max*Parrotfish','DHW Max*SSTA Freq SD','DHW Max*Temp Max','DHW Max*Depth','DHW Max*Wave Exposure','DHW Max*Cyclones','DHW Max*Turbidity','DHW Max*Urchins')) %>% arrange(desc(beta))
 
-# move dhw_max*temp_max down one so red bars are together
-# beta_d_80_ordered <- beta_d_80_ordered[c(1:13,14,17,15,18,16,19),]
-
 driver_order <- data.frame(driver_name=c("DHW Max*Wave Exposure", "DHW Max*Turbidity", "Temp Max", "Parrotfish", "Cyclones", "SSTA Freq SD", "DHW Max*Cyclones", "DHW Max*Parrotfish", "DHW Max*Urchins", "Depth", "DHW Max*SSTA Freq SD", "DHW Max*Temp Max", "DHW Max*Depth", "Turbidity", "Wave Exposure", "Urchins", "DHW Max*Macroalgae", "Macroalgae", "DHW Max"))
 
 beta_d_80_ordered <- left_join(driver_order,beta_d_80_ordered,by='driver_name')
